@@ -15,10 +15,12 @@ class RoomRepository:
         room_model = RoomMapper.to_model(entity)
         self._session.add(room_model)
         await self._session.flush()
+        await self._session.refresh(room_model)
 
         security_model = RoomMapper.security_to_model(entity, room_model.id)
         self._session.add(security_model)
         await self._session.flush()
+        await self._session.refresh(security_model)
 
         room_model.security_settings = security_model
         return RoomMapper.to_entity(room_model)

@@ -17,6 +17,7 @@ class InviteRepository:
         )
         self._session.add(model)
         await self._session.flush()
+        await self._session.refresh(model)
 
         entity.id = model.id
         entity.created_at = model.created_at
