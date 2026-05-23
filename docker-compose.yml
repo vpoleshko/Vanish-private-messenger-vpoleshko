@@ -22,6 +22,8 @@ services:
       MYSQL_DATABASE: ${MYSQL_DB:-vanish}
       MYSQL_USER: ${MYSQL_USER:-vanish}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vanishpass}
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
