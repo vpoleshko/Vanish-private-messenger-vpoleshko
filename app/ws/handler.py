@@ -107,6 +107,7 @@ async def ws_endpoint(ws: WebSocket):
 
             room_id      = room.id
             expires_at   = room.expires_at
+            room_type    = room.room_type.value
 
         peer_id = f"peer_{secrets.token_hex(4)}"
         peer = Peer(peer_id=peer_id, websocket=ws, public_key=msg.public_key, room_id=room_id)
@@ -120,12 +121,14 @@ async def ws_endpoint(ws: WebSocket):
                 status="waiting_for_peer",
                 peer_id=peer_id,
                 room_expires_at=_exp_ts(expires_at).isoformat(),
+                room_type=room_type,
             ).model_dump_json())
         else:
             await ws.send_text(JoinRoomAck(
                 status="connected",
                 peer_id=peer_id,
                 room_expires_at=_exp_ts(expires_at).isoformat(),
+                room_type=room_type,
                 peer=PeerInfo(peer_id=other.peer_id, public_key=other.public_key),
             ).model_dump_json())
 
@@ -144,11 +147,23 @@ async def ws_endpoint(ws: WebSocket):
                 break
 
             try:
-                raw = await asyncio.wait_for(ws.receive_text(), timeout=min(time_left, 30.0))
+                frame = await asyncio.wait_for(ws.receive(), timeout=min(time_left, 30.0))
             except asyncio.TimeoutError:
                 continue
 
             if peer is None:
+                continue
+
+            # Binary frame — relay as-is (chat text or voice, distinguished by client)
+            if frame.get("bytes") is not None:
+                other = registry.other_peer(peer.room_id, peer.peer_id)
+                if other:
+                    await other.websocket.send_bytes(frame["bytes"])
+                continue
+
+            # Text frame — control messages only
+            raw = frame.get("text")
+            if not raw:
                 continue
 
             try:
@@ -156,16 +171,7 @@ async def ws_endpoint(ws: WebSocket):
             except json.JSONDecodeError:
                 continue
 
-            if data.get("type") == "send_message":
-                other = registry.other_peer(peer.room_id, peer.peer_id)
-                if other:
-                    await other.websocket.send_text(json.dumps({
-                        "type": "message",
-                        "from_peer_id": peer.peer_id,
-                        "text": data.get("text", ""),
-                    }))
-
-            elif data.get("type") == "destroy_room":
+            if data.get("type") == "destroy_room":
                 destroyed = json.dumps({"type": "room_destroyed"})
                 peers = registry.remove_room(peer.room_id)
                 async with AsyncSessionLocal() as session:

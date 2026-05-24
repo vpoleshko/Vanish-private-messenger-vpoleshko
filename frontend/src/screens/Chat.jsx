@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-export default function Chat({ state, sendMsg, destroyRoom, leaveRoom }) {
+export default function Chat({ state, sendMsg, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
   return state.roomType === 'voice'
-    ? <VoiceChat state={state} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
+    ? <VoiceChat state={state} sendVoice={sendVoice} voiceRef={voiceRef} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
     : <TextChat  state={state} sendMsg={sendMsg} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
 }
 
@@ -72,32 +72,68 @@ function TextChat({ state, sendMsg, destroyRoom, leaveRoom }) {
 }
 
 /* ── Voice chat ─────────────────────────────────────────────────────────────── */
-function VoiceChat({ state, destroyRoom, leaveRoom }) {
+function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
+  const [muted,   setMuted]   = useState(false)
+  const [error,   setError]   = useState(null)
+  const [active,  setActive]  = useState(false)
+  const engineRef = useRef(null)
+
+  useEffect(() => {
+    let engine
+    import('../audio.js').then(({ VoiceEngine }) => {
+      engine = new VoiceEngine({ onChunk: sendVoice })
+      engineRef.current = engine
+      voiceRef.current  = (audio) => engine.receive(audio)
+      engine.start().then(() => setActive(true)).catch(() => {
+        setError('Microphone access denied.')
+      })
+    })
+    return () => {
+      engine?.stop()
+      voiceRef.current = null
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleMute = () => {
+    const next = !muted
+    setMuted(next)
+    engineRef.current?.setMuted(next)
+  }
+
   return (
     <div className="chat-wrap">
       <ChatHeader state={state} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
 
       <div className="voice-body">
-        <div className={`voice-avatar${state.peerPeerId ? ' active' : ''}`}>
-          🎤
+        <div className={`voice-avatar${state.peerPeerId && active ? ' active' : ''}`}>
+          {muted ? '🔇' : '🎙'}
         </div>
 
-        <div>
+        <div style={{ textAlign: 'center' }}>
           <div className="voice-status">
-            {state.peerPeerId ? 'Connected' : 'Waiting for peer…'}
+            {error
+              ? error
+              : state.peerPeerId
+                ? active ? 'Connected' : 'Connecting…'
+                : 'Waiting for peer…'}
           </div>
           <div className="voice-sub">
-            {state.peerPeerId ? 'Voice session active' : 'Share the invite link'}
+            {error
+              ? 'Check browser permissions'
+              : state.peerPeerId
+                ? 'Voice session active'
+                : 'Share the invite link'}
           </div>
         </div>
 
         <div className="voice-controls">
-          <div className="btn-mic" title="Voice not available yet">🔇</div>
-        </div>
-
-        <div className="voice-coming-soon">
-          🔒 Voice encryption is coming soon.<br />
-          End-to-end encrypted calls via WebRTC.
+          <button
+            className={`btn-mic${muted ? ' muted' : ''}`}
+            onClick={toggleMute}
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            {muted ? '🔇' : '🎙'}
+          </button>
         </div>
       </div>
     </div>
@@ -106,7 +142,8 @@ function VoiceChat({ state, destroyRoom, leaveRoom }) {
 
 /* ── Shared header ──────────────────────────────────────────────────────────── */
 function ChatHeader({ state, destroyRoom, leaveRoom }) {
-  const [label, setLabel] = useState('')
+  const [label,       setLabel]       = useState('')
+  const [showSafety,  setShowSafety]  = useState(false)
 
   useEffect(() => {
     const tick = () => {
@@ -114,7 +151,7 @@ function ChatHeader({ state, destroyRoom, leaveRoom }) {
       const diff = Math.max(0, state.expiresAt - Date.now())
       const m = Math.floor(diff / 60000)
       const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0')
-      setLabel(`expires ${m}:${s}`)
+      setLabel(`${m}:${s}`)
     }
     tick()
     const id = setInterval(tick, 1000)
@@ -124,21 +161,41 @@ function ChatHeader({ state, destroyRoom, leaveRoom }) {
   const urgent = state.expiresAt && (state.expiresAt - Date.now()) < 120000
 
   return (
-    <div className="chat-header">
-      <div className="header-left">
-        <div className="status-dot" />
-        <div>
-          <div className="header-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Secure Room
-            <span className="type-badge">{state.roomType === 'voice' ? '🎤 voice' : '💬 text'}</span>
+    <>
+      <div className="chat-header">
+        <div className="header-left">
+          <div className="status-dot" />
+          <div>
+            <div className="header-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              Secure Room
+              <span className="type-badge">{state.roomType === 'voice' ? '🎙 voice' : '💬 text'}</span>
+            </div>
+            <div className={`header-sub mono${urgent ? ' urgent' : ''}`}>
+              {label && `expires ${label}`}
+            </div>
           </div>
-          <div className={`header-sub mono${urgent ? ' urgent' : ''}`}>{label}</div>
+        </div>
+        <div className="header-actions">
+          {state.safetyCode && (
+            <button
+              className={`btn-verify${showSafety ? ' active' : ''}`}
+              onClick={() => setShowSafety(v => !v)}
+              title="Verify connection"
+            >
+              {showSafety ? '🔒' : '🔑'}
+            </button>
+          )}
+          <button className="btn btn-ghost" onClick={leaveRoom}>Leave</button>
+          <button className="btn btn-danger" onClick={destroyRoom}>Стереть всё</button>
         </div>
       </div>
-      <div className="header-actions">
-        <button className="btn btn-ghost" onClick={leaveRoom}>Leave</button>
-        <button className="btn btn-danger" onClick={destroyRoom}>Стереть всё</button>
-      </div>
-    </div>
+
+      {showSafety && state.safetyCode && (
+        <div className="safety-bar">
+          <span className="safety-label">Safety code — read aloud to verify, must match on both sides</span>
+          <span className="safety-code mono">{state.safetyCode}</span>
+        </div>
+      )}
+    </>
   )
 }

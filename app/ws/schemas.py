@@ -20,6 +20,7 @@ class JoinRoomAck(BaseModel):
     status: Literal["waiting_for_peer", "connected"]
     peer_id: str
     room_expires_at: str
+    room_type: str = "text"
     peer: PeerInfo | None = None
 
 

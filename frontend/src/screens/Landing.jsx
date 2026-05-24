@@ -2,38 +2,38 @@ export default function Landing({ state, set, createRoom }) {
   const { roomType, ttlMinutes, panicUrl } = state
 
   return (
-    <div className="center">
-      <div className="logo">VANISH</div>
+    <div className="landing-wrap">
+      <div className="landing-header">
+        <div className="logo">Vanish</div>
+        <div className="landing-title">Private room</div>
+        <div className="landing-sub">No accounts. No logs. Disappears.</div>
+      </div>
 
       <div className="form-card">
 
         {/* Room type */}
-        <div>
-          <div className="form-label">Room type</div>
+        <div className="form-section">
+          <div className="form-section-label">Type</div>
           <div className="room-type-grid">
             <RoomTypeCard
               icon="💬"
               name="Text"
-              desc="Send encrypted messages"
-              value="text"
+              desc="Encrypted messages"
               selected={roomType === 'text'}
               onClick={() => set({ roomType: 'text' })}
             />
             <RoomTypeCard
-              icon="🎤"
+              icon="🎙"
               name="Voice"
-              desc="Encrypted voice call"
-              value="voice"
+              desc="Encrypted call"
               selected={roomType === 'voice'}
-              soon
               onClick={() => set({ roomType: 'voice' })}
             />
           </div>
         </div>
 
-        {/* TTL */}
-        <div>
-          <div className="form-label">Room duration</div>
+        {/* TTL + Panic URL */}
+        <div className="form-section">
           <div className="field-row">
             <span className="field-label">Expires after</span>
             <input
@@ -42,7 +42,7 @@ export default function Landing({ state, set, createRoom }) {
               min={1}
               max={10080}
               value={ttlMinutes}
-              style={{ textAlign: 'right', width: 64 }}
+              style={{ width: 44 }}
               onChange={e => {
                 const v = parseInt(e.target.value)
                 if (v > 0) set({ ttlMinutes: v })
@@ -50,31 +50,28 @@ export default function Landing({ state, set, createRoom }) {
             />
             <span className="field-unit">min</span>
           </div>
-        </div>
-
-        {/* Panic URL */}
-        <div>
-          <div className="form-label">After destroy, redirect to</div>
           <div className="field-row">
+            <span className="field-label">Redirect after destroy</span>
             <input
               className="field-input"
               type="url"
               value={panicUrl}
               placeholder="https://google.com"
+              style={{ width: 160, textAlign: 'right' }}
               onChange={e => set({ panicUrl: e.target.value.trim() || 'https://google.com' })}
             />
           </div>
         </div>
 
-        <button className="btn btn-primary" style={{ width: '100%' }} onClick={createRoom}>
-          Create Room
+        <button className="btn-create" onClick={createRoom}>
+          Create room
         </button>
       </div>
     </div>
   )
 }
 
-function RoomTypeCard({ icon, name, desc, value, selected, soon, onClick }) {
+function RoomTypeCard({ icon, name, desc, selected, soon, onClick }) {
   return (
     <div
       className={`room-type-card${selected ? ' selected' : ''}${soon ? ' disabled' : ''}`}
