@@ -154,21 +154,91 @@ async function createFingerprint({ roomId, publicKeyA, publicKeyB }) {
   ));
 }
 
+const WORDS = [
+  "acid","acorn","acre","adam","aged","agil","aide","airy","ajax","akin",
+  "alba","alga","alma","aloe","alps","also","alto","alum","amen","amid",
+  "ammo","ample","anew","ankh","ante","apex","arch","arco","arid","ark",
+  "arma","army","arno","arum","atom","atop","aunt","aura","auto","avid",
+  "axle","bake","bale","balm","band","bane","bard","bark","barn","base",
+  "bath","bead","beam","bean","bear","beck","bell","belt","berg","bile",
+  "bind","birch","bird","bite","blot","blow","blue","boar","bold","bolt",
+  "bond","bone","book","boom","born","brad","brag","bran","brew","brim",
+  "brow","buck","bulb","bulk","bull","burn","burp","burr","byte","cage",
+  "cake","calf","calm","came","camp","cane","cape","card","care","carp",
+  "cart","case","cave","cede","cell","chad","chef","chin","chip","chop",
+  "chum","cider","cite","clam","clan","clap","claw","clay","clef","clip",
+  "clod","clog","club","clue","coal","coat","coax","code","coil","coin",
+  "cold","colt","cone","cope","cord","core","corn","cove","crag","crew",
+  "crop","crow","cuff","cult","curb","cure","curl","damp","dare","dark",
+  "dart","dash","data","date","dawn","deal","dean","deck","deep","deft",
+  "dell","dent","desk","dew","dial","dice","diet","dirk","disk","dojo",
+  "dome","door","dorm","dove","down","drab","drag","draw","drip","drop",
+  "drum","dune","dung","dusk","dust","earl","earn","edge","eels","egon",
+  "elbow","elm","emit","emul","envy","epic","etch","even","exam","expo",
+  "face","fact","fade","fail","fake","fall","fame","fang","farm","fast",
+  "fawn","faze","feat","fend","fern","feta","feud","fief","film","find",
+  "fire","firm","fish","fist","five","flag","flap","flat","flaw","fled",
+  "flew","flex","flip","floe","flow","flux","foam","foe","fold","folk",
+  "fond","font","ford","fore","fork","form","fort","foul","four","fray",
+  "free","frog","from","fuel","full","fume","fund","furl","gale","gall",
+  "game","garb","gate","gave","gaze","gear","gene","gild","gilt","give",
+  "glad","gland","glee","glen","glob","glow","glum","glyph","goad","goat",
+  "gold","golf","gong","gore","gown","grab","gram","gray","grid","grin",
+  "grip","grit","grow","grub","gulf","gull","gust","gyre","hack","hail",
+  "half","halt","hand","hard","hare","harp","hash","hasp","haze","heap",
+  "heat","heel","helm","hemp","herb","herd","hewn","hide","hill","hilt",
+  "hint","hive","hoar","hock","hold","hole","holm","holt","home","hone",
+  "hook","hope","horn","hose","hulk","hull","hump","hunt","hurl","hymn",
+  "inch","iris","iron","isle","jade","jail","jamb","jerk","jest","jolt",
+  "jot","jowl","jump","junk","jury","just","keel","keen","kelp","kerf",
+  "kern","kiln","kind","king","knob","knot","lace","lain","lake","lame",
+  "lamp","land","lane","lark","lash","laud","lava","lawn","lead","leaf",
+  "lean","leap","ledge","lemon","lens","lien","lift","lime","line","link",
+  "lion","list","loft","loin","lore","lorn","loss","lout","luge","lung",
+  "lure","lurk","mace","malt","mane","mark","mars","mast","math","maze",
+  "mead","meal","meat","meld","melt","mesh","mild","mill","mist","mode",
+  "mold","mole","molt","monk","moon","moor","more","moss","moth","muck",
+  "muon","muse","musk","nail","nape","navy","neem","neon","nest","newt",
+  "next","nick","nimb","node","noel","noir","norm","nose","notch","null",
+  "numb","oaken","oath","oboe","octo","odor","ogre","ohms","omen","onyx",
+  "open","opus","orbs","orca","ordo","origin","oven","oxen","pace","pack",
+  "pact","page","pail","pale","palm","pave","pawn","peak","peat","peel",
+  "peel","peg","pelt","perk","pike","pile","pine","pink","pith","plan",
+  "plod","plop","plot","plow","plum","plus","poem","poll","pond","pore",
+  "port","pose","post","pour","prey","prod","prop","prow","pulp","pump",
+  "punt","pure","push","quay","quill","race","rack","raft","rain","ramp",
+  "rang","rank","rasp","rave","razz","read","ream","reap","reed","reef",
+  "reel","rely","rend","rent","resin","rest","rice","rich","ride","riff",
+  "rift","rime","rind","ring","riot","rise","risk","rite","road","roam",
+  "roar","robe","rock","rode","role","roll","romp","root","rope","rose",
+  "rout","rove","ruby","rude","ruin","rule","rump","rune","rusk","rust",
+  "safe","sage","sail","salt","sand","sane","sash","save","scan","scar",
+  "scud","seal","seam","seed","seek","seep","self","send","serf","shed",
+  "shin","ship","silk","silt","sire","site","skew","skip","slab","slam",
+  "slap","slat","slew","slim","slip","slot","slow","slug","slum","slur",
+  "smog","snap","snip","snow","soak","soar","sock","soil","sole","some",
+  "song","soot","sort","soul","span","spar","spin","spit","spot","spur",
+  "stab","stag","star","stem","step","stew","stir","stop","stub","stud",
+  "stun","suet","sulk","sump","sung","sunk","surf","surge","swam","swan",
+  "swap","sway","swig","swim","swum","sync","tack","tame","tang","tarn",
+  "tarp","taut","teak","teal","tear","tell","tend","tent","term","tern",
+  "test","text","thaw","then","they","thin","thorn","tide","tile","till",
+  "tilt","time","tint","tire","toad","toil","told","toll","tomb","tome",
+  "tone","tong","tool","tops","torn","tort","toss","tour","town","tram",
+  "trap","trim","trio","trip","trod","trot","troy","true","tuft","tuna",
+  "turf","tusk","twin","type","urge","used","vale","vane","vast","vat",
+  "veil","vein","vent","verb","vest","vial","vibe","view","vile","vine",
+  "void","volt","wade","waft","wake","wand","wane","ward","warm","warp",
+  "wart","wax","weld","well","wend","went","wick","wild","will","wilt",
+  "wimp","wind","wine","wing","wire","wise","wisp","woad","woke","wolf",
+  "womb","wore","worm","wove","wren","writ","yam","yard","yarn","yawl",
+  "yell","yew","yoke","yore","your","zeal","zero","zest","zinc","zone",
+]
+
 function fingerprintToSafetyCode(fingerprint) {
-  const view = new DataView(
-    fingerprint.buffer,
-    fingerprint.byteOffset,
-    fingerprint.byteLength
-  );
-
-  const parts = [];
-
-  for (let i = 0; i < 5; i++) {
-    const number = view.getUint32(i * 4, false) % 100000;
-    parts.push(number.toString().padStart(5, "0"));
-  }
-
-  return parts.join(" ");
+  return [0, 4, 8, 12]
+    .map(i => WORDS[fingerprint[i]])
+    .join(" · ")
 }
 
 export class E2EERatchet {

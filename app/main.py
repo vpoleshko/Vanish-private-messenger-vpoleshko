@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -6,6 +7,13 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.ws.handler import router as ws_router
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+    datefmt="%H:%M:%S",
+)
+logging.getLogger("vanish").setLevel(logging.DEBUG)
 
 _STATIC = Path(__file__).parent / "static"
 _INDEX  = _STATIC / "index.html"

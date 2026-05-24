@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import secrets
 from datetime import datetime, timezone
 
@@ -156,9 +157,15 @@ async def ws_endpoint(ws: WebSocket):
 
             # Binary frame — relay as-is (chat text or voice, distinguished by client)
             if frame.get("bytes") is not None:
+                raw_bytes = frame["bytes"]
+                frame_type = raw_bytes[0] if raw_bytes else -1
+                label = {0x01: "TEXT", 0x02: "VOICE"}.get(frame_type, f"0x{frame_type:02x}")
+                logging.getLogger("vanish").info(
+                    "[%s] %s %d bytes", peer.peer_id, label, len(raw_bytes)
+                )
                 other = registry.other_peer(peer.room_id, peer.peer_id)
                 if other:
-                    await other.websocket.send_bytes(frame["bytes"])
+                    await other.websocket.send_bytes(raw_bytes)
                 continue
 
             # Text frame — control messages only
