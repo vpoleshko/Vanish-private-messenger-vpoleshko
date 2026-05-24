@@ -1,12 +1,26 @@
+const IcoChat = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+)
+
+const IcoMic = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <rect x="9" y="2" width="6" height="12" rx="3"/>
+    <path d="M5 10a7 7 0 0 0 14 0"/>
+    <line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="8" y1="22" x2="16" y2="22"/>
+  </svg>
+)
+
 export default function Landing({ state, set, createRoom }) {
   const { roomType, ttlMinutes, panicUrl } = state
 
   return (
     <div className="landing-wrap">
       <div className="landing-header">
-        <div className="logo">Vanish</div>
-        <div className="landing-title">Private room</div>
-        <div className="landing-sub">No accounts. No logs. Disappears.</div>
+        <div className="logo-hero">Vanish</div>
+        <div className="landing-sub" style={{ marginTop: 10 }}>Nothing stored. Nothing linked. Nothing left.</div>
       </div>
 
       <div className="form-card">
@@ -16,14 +30,14 @@ export default function Landing({ state, set, createRoom }) {
           <div className="form-section-label">Type</div>
           <div className="room-type-grid">
             <RoomTypeCard
-              icon="💬"
+              icon={<IcoChat />}
               name="Text"
               desc="Encrypted messages"
               selected={roomType === 'text'}
               onClick={() => set({ roomType: 'text' })}
             />
             <RoomTypeCard
-              icon="🎙"
+              icon={<IcoMic />}
               name="Voice"
               desc="Encrypted call"
               selected={roomType === 'voice'}

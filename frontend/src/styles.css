@@ -85,6 +85,13 @@ body {
   font-size: 13px; font-weight: 600; letter-spacing: .18em;
   text-transform: uppercase; color: var(--muted2);
 }
+.logo-hero {
+  font-size: 52px; font-weight: 800; letter-spacing: -.04em; line-height: 1;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #7c3aed 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 32px rgba(167,139,250,.25));
+}
 
 /* ── Landing ── */
 .landing-wrap {

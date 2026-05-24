@@ -47,14 +47,14 @@ function SafetyModal({ code, onClose }) {
   return (
     <div className="safety-overlay" onClick={onClose}>
       <div className="safety-modal" onClick={e => e.stopPropagation()}>
-        <div className="safety-modal-label">Код безопасности</div>
+        <div className="safety-modal-label">Safety code</div>
         <div className="safety-words">
           {words.map((w, i) => <span key={i} className="safety-word">{w}</span>)}
         </div>
         <div className="safety-modal-hint">
-          Прочитайте вслух собеседнику — слова должны совпадать у обоих
+          If these words match on both sides, your conversation is end-to-end encrypted and completely private — no one, including Vanish servers, can read it
         </div>
-        <button className="btn-ghost" style={{marginTop:16}} onClick={onClose}>Закрыть</button>
+        <button className="btn-ghost" style={{marginTop:16}} onClick={onClose}>Close</button>
       </div>
     </div>
   )
@@ -253,7 +253,7 @@ function ChatHeader({ state, destroyRoom, leaveRoom }) {
             </button>
           )}
           <button className="btn btn-ghost" onClick={leaveRoom}>Leave</button>
-          <button className="btn btn-danger" onClick={destroyRoom}>Стереть всё</button>
+          <button className="btn btn-danger" onClick={destroyRoom}>Wipe</button>
         </div>
       </div>
 
