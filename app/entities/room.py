@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.models.enums import PrivacyMode, RoomStatus
+from app.models.enums import PrivacyMode, RoomStatus, RoomType
 
 
 @dataclass
@@ -29,3 +29,4 @@ class RoomEntity:
     id: int | None = None
     created_at: datetime | None = None
     status: RoomStatus = RoomStatus.ACTIVE
+    room_type: RoomType = RoomType.TEXT

@@ -8,3 +8,6 @@ dist/
 .idea/
 .vscode/
 alembic/versions/*.py
+docs/*
+.claude/*
+node_modules/

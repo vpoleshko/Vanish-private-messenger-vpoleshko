@@ -15,3 +15,8 @@ class PrivacyMode(str, enum.Enum):
 class InviteStatus(str, enum.Enum):
     ACTIVE = "active"
     USED = "used"
+
+
+class RoomType(str, enum.Enum):
+    TEXT  = "text"
+    VOICE = "voice"

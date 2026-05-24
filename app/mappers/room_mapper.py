@@ -1,6 +1,12 @@
+from datetime import timezone
+
 from app.entities.room import RoomEntity, SecuritySettingsEntity
 from app.models.room import Room
 from app.models.room_security_settings import RoomSecuritySettings
+
+
+def _utc(dt):
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 class RoomMapper:
@@ -10,11 +16,12 @@ class RoomMapper:
         return RoomEntity(
             id=model.id,
             room_code_hash=model.room_code_hash,
-            created_at=model.created_at,
-            expires_at=model.expires_at,
+            created_at=_utc(model.created_at),
+            expires_at=_utc(model.expires_at),
             status=model.status,
             privacy_mode=model.privacy_mode,
             max_participants=model.max_participants,
+            room_type=model.room_type,
             security=SecuritySettingsEntity(
                 e2ee_enabled=sec.e2ee_enabled,
                 padding_enabled=sec.padding_enabled,
@@ -37,6 +44,7 @@ class RoomMapper:
             status=entity.status,
             privacy_mode=entity.privacy_mode,
             max_participants=entity.max_participants,
+            room_type=entity.room_type,
         )
 
     @staticmethod

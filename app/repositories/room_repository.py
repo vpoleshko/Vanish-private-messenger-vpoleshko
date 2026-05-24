@@ -43,6 +43,15 @@ class RoomRepository:
         model = result.scalar_one_or_none()
         return RoomMapper.to_entity(model) if model else None
 
+    async def delete(self, room_id: int) -> None:
+        result = await self._session.execute(
+            select(Room).where(Room.id == room_id)
+        )
+        model = result.scalar_one_or_none()
+        if model:
+            await self._session.delete(model)
+            await self._session.flush()
+
     async def save(self, entity: RoomEntity) -> RoomEntity:
         result = await self._session.execute(
             select(Room)

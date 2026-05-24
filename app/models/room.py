@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, DateTime, Enum, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.enums import PrivacyMode, RoomStatus
+from app.models.enums import PrivacyMode, RoomStatus, RoomType
 
 if TYPE_CHECKING:
     from app.models.key_exchange_metadata import KeyExchangeMetadata
@@ -57,6 +57,13 @@ class Room(Base):
         nullable=False,
         default=2,
         server_default="2",
+    )
+
+    room_type: Mapped[RoomType] = mapped_column(
+        Enum(RoomType, name="room_type"),
+        nullable=False,
+        default=RoomType.TEXT,
+        server_default=RoomType.TEXT.value,
     )
 
     invites: Mapped[list["RoomInvite"]] = relationship(
