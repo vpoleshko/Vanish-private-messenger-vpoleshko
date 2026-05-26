@@ -40,3 +40,8 @@ async def index():
 @app.get("/r/{room_code}")
 async def room_page(room_code: str):
     return FileResponse(_INDEX)
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    return FileResponse(_INDEX)

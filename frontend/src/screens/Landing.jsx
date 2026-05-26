@@ -14,7 +14,7 @@ const IcoMic = () => (
 )
 
 export default function Landing({ state, set, createRoom }) {
-  const { roomType, ttlMinutes, panicUrl } = state
+  const { roomType, ttlMinutes } = state
 
   return (
     <div className="landing-wrap">
@@ -63,17 +63,6 @@ export default function Landing({ state, set, createRoom }) {
               }}
             />
             <span className="field-unit">min</span>
-          </div>
-          <div className="field-row">
-            <span className="field-label">Redirect after destroy</span>
-            <input
-              className="field-input"
-              type="url"
-              value={panicUrl}
-              placeholder="https://google.com"
-              style={{ width: 160, textAlign: 'right' }}
-              onChange={e => set({ panicUrl: e.target.value.trim() || 'https://google.com' })}
-            />
           </div>
         </div>
 

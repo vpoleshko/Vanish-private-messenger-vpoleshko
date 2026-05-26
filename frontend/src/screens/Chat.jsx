@@ -27,6 +27,16 @@ const IcoShield = () => (
   </svg>
 )
 
+const IcoMicShield = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="2" width="6" height="10" rx="3"/>
+    <path d="M5 10a7 7 0 0 0 9.33 6.62"/>
+    <line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="8" y1="22" x2="16" y2="22"/>
+    <path d="M19 14l-3 1.2v2.3c0 1.4.9 2.7 3 3 2.1-.3 3-1.6 3-3v-2.3L19 14z" fill="currentColor" fillOpacity=".15" strokeWidth="1.5"/>
+  </svg>
+)
+
 const IcoVoice = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}>
     <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -132,11 +142,51 @@ function TextChat({ state, sendMsg, destroyRoom, leaveRoom }) {
 }
 
 /* ── Voice chat ─────────────────────────────────────────────────────────── */
+function AnonWarning({ onConfirm, onCancel }) {
+  return (
+    <div className="safety-overlay" onClick={onCancel}>
+      <div className="safety-modal" onClick={e => e.stopPropagation()}>
+        <div className="safety-modal-label" style={{ color: 'var(--danger)' }}>Warning</div>
+        <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, textAlign: 'center' }}>
+          Disabling voice anonymization will transmit your <strong>real voice</strong>.<br/>
+          Your identity may become recognizable to the other party.
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onCancel}>Cancel</button>
+          <button className="btn btn-danger" style={{ flex: 1 }} onClick={onConfirm}>Disable anyway</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
-  const [muted,   setMuted]   = useState(false)
-  const [error,   setError]   = useState(null)
-  const [active,  setActive]  = useState(false)
+  const [muted,        setMuted]        = useState(false)
+  const [error,        setError]        = useState(null)
+  const [active,       setActive]       = useState(false)
+  const [peerWasHere,  setPeerWasHere]  = useState(false)
+  const [anonymized,   setAnonymized]   = useState(true)
+  const [showWarning,  setShowWarning]  = useState(false)
   const engineRef = useRef(null)
+
+  useEffect(() => {
+    if (state.peerPeerId) setPeerWasHere(true)
+  }, [state.peerPeerId])
+
+  const handleAnonToggle = () => {
+    if (anonymized) {
+      setShowWarning(true)
+    } else {
+      setAnonymized(true)
+      engineRef.current?.setAnonymized(true)
+    }
+  }
+
+  const confirmDisableAnon = () => {
+    setAnonymized(false)
+    engineRef.current?.setAnonymized(false)
+    setShowWarning(false)
+  }
 
   useEffect(() => {
     let engine
@@ -144,8 +194,17 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
       engine = new VoiceEngine({ onChunk: sendVoice })
       engineRef.current = engine
       voiceRef.current  = (audio) => engine.receive(audio)
-      engine.start().then(() => setActive(true)).catch(() => {
-        setError('Microphone access denied.')
+      engine.start().then(() => setActive(true)).catch((err) => {
+        console.error('[VoiceChat] engine.start failed:', err?.name, err?.message)
+        if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+          setError('Microphone access denied.')
+        } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+          setError('No microphone found.')
+        } else if (err?.name === 'NotReadableError' || err?.name === 'TrackStartError') {
+          setError('Microphone is in use by another app.')
+        } else {
+          setError('Could not start microphone.')
+        }
       })
     })
     return () => {
@@ -177,14 +236,14 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
               ? error
               : state.peerPeerId
                 ? active ? 'Connected' : 'Connecting…'
-                : 'Waiting for peer…'}
+                : peerWasHere ? 'Peer left the call' : 'Waiting for peer…'}
           </div>
           <div className="voice-sub">
             {error
-              ? 'Check browser permissions'
+              ? error.includes('denied') ? 'Check browser permissions' : 'Check your audio device'
               : state.peerPeerId
                 ? 'Voice session active'
-                : 'Share the invite link'}
+                : peerWasHere ? 'The session has ended' : 'Share the invite link'}
           </div>
         </div>
 
@@ -198,8 +257,29 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
               {muted ? <IcoMicOff /> : <IcoMic />}
             </span>
           </button>
+
+          <button
+            className={`btn-mic${!anonymized ? ' muted' : ''}`}
+            onClick={handleAnonToggle}
+            title={anonymized ? 'Voice anonymized — click to disable' : 'Real voice — click to anonymize'}
+          >
+            <span style={{width:22,height:22}}><IcoMicShield /></span>
+          </button>
+        </div>
+
+        <div className="voice-anon-status">
+          {anonymized
+            ? 'Voice anonymized'
+            : 'Real voice — identity at risk'}
         </div>
       </div>
+
+      {showWarning && (
+        <AnonWarning
+          onConfirm={confirmDisableAnon}
+          onCancel={() => setShowWarning(false)}
+        />
+      )}
     </div>
   )
 }

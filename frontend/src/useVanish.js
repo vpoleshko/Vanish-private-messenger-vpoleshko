@@ -3,6 +3,8 @@ import { createRoom as apiCreateRoom } from './api'
 import { closeTab } from './closeTab'
 import { E2EERatchet, fromBase64 } from './crypto.js'
 
+const PANIC_URL = 'https://google.com'
+
 const INIT = {
   screen:      'landing',
   roomCode:    null,
@@ -15,7 +17,6 @@ const INIT = {
   messages:    [],
   errorMsg:    '',
   ttlMinutes:  60,
-  panicUrl:    'https://google.com',
   safetyCode:  null,
 }
 
@@ -49,8 +50,8 @@ export function useVanish() {
   useEffect(() => {
     if (!state.expiresAt) return
     const ms = state.expiresAt - Date.now()
-    if (ms <= 0) { closeTab(state.panicUrl); return }
-    const id = setTimeout(() => closeTab(stateRef.current.panicUrl), ms)
+    if (ms <= 0) { closeTab(PANIC_URL); return }
+    const id = setTimeout(() => closeTab(PANIC_URL), ms)
     return () => clearTimeout(id)
   }, [state.expiresAt]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,7 +75,7 @@ export function useVanish() {
       const ws = wsRef.current
       if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'destroy_room' }))
       ratchetRef.current?.destroy()
-      closeTab(stateRef.current.panicUrl)
+      closeTab(PANIC_URL)
     }
   }, [set])
 
@@ -104,11 +105,12 @@ export function useVanish() {
         break
 
       case 'peer_left':
+        set({ peerPeerId: null })
         dispatch({ type: 'APPEND_MSG', msg: { system: true, text: 'Peer disconnected.', time: new Date() } })
         break
 
       case 'room_destroyed':
-        closeTab(stateRef.current.panicUrl)
+        closeTab(PANIC_URL)
         break
 
       case 'error':
@@ -224,7 +226,7 @@ export function useVanish() {
     const ws = wsRef.current
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'destroy_room' }))
     ratchetRef.current?.destroy()
-    closeTab(stateRef.current.panicUrl)
+    closeTab(PANIC_URL)
   }, [])
 
   const leaveRoom = useCallback(() => {

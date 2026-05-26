@@ -336,7 +336,6 @@ export class E2EERatchet {
       const iAmLow =
         compareBytes(myKeyPair.publicKey, theirPublicKey) <= 0;
 
-      // Separate static key for voice — ratchet overhead not needed for real-time audio
       const voiceKey = await hkdf(
         rootKey,
         new Uint8Array(32),
@@ -498,7 +497,6 @@ export class E2EERatchet {
     }
   }
 
-  // Voice: static key, random nonce per chunk — returns Uint8Array: [nonce][ciphertext]
   encryptVoice(plainBytes) {
     const NONCE_LEN = sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
     const nonce = sodium.randombytes_buf(NONCE_LEN);
@@ -509,7 +507,6 @@ export class E2EERatchet {
     return concatBytes(nonce, ciphertext);
   }
 
-  // Voice: expects Uint8Array [nonce][ciphertext] — returns Uint8Array plaintext
   decryptVoice(data) {
     const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
     const NONCE_LEN = sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
