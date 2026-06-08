@@ -11,3 +11,4 @@ alembic/versions/*.py
 docs/*
 .claude/*
 node_modules/
+/app/static/assets

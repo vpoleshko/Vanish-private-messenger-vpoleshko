@@ -22,7 +22,7 @@ export default defineConfig({
     },
   ],
   build: {
-    outDir: '../app/static',
+    outDir: 'dist',
     emptyOutDir: true,
     target: 'es2022',
   },
