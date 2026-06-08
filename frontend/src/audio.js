@@ -3,17 +3,20 @@ import { VoiceAnonymizer } from './anonymizer.js'
 const SAMPLE_RATE = 16000
 const BUFFER_SIZE = 512
 const INIT_DELAY  = 0.08   // 80ms jitter buffer
-const ANON_PITCH  = 0.79   // ~4 semitones down + formant preserved
+const ANON_PITCH  = 0.89   // ~4 semitones down + formant preserved
 
 export class VoiceEngine {
-  constructor({ onChunk }) {
+  constructor({ onChunk, onLevel }) {
     this._onChunk      = onChunk
+    this._onLevel      = onLevel || (() => {})
     this._ctx          = null
     this._stream       = null
     this._processor    = null
     this._muted        = false
+    this._deafened     = false
     this._anonymized   = true
     this._nextPlayTime = 0
+    this._smoothLevel  = 0
     this._anon         = new VoiceAnonymizer(ANON_PITCH)
   }
 
@@ -25,11 +28,17 @@ export class VoiceEngine {
     const processor = this._ctx.createScriptProcessor(BUFFER_SIZE, 1, 1)
 
     processor.onaudioprocess = (e) => {
-      if (this._muted) return
       const input = e.inputBuffer.getChannelData(0)
-      const frame = this._anonymized
-        ? this._anon.process(input)
-        : input
+
+      // RMS level with EMA smoothing — drives the speaking indicator
+      let sum = 0
+      for (let i = 0; i < input.length; i++) sum += input[i] * input[i]
+      const rms = Math.sqrt(sum / input.length)
+      this._smoothLevel = 0.65 * this._smoothLevel + 0.35 * rms
+      this._onLevel(this._muted ? 0 : Math.min(this._smoothLevel * 10, 1))
+
+      if (this._muted) return
+      const frame = this._anonymized ? this._anon.process(input) : input
       this._onChunk(_toInt16Buffer(frame))
     }
 
@@ -39,7 +48,7 @@ export class VoiceEngine {
   }
 
   receive(bufOrView) {
-    if (!this._ctx) return
+    if (!this._ctx || this._deafened) return
     const float32 = _fromInt16Buffer(bufOrView)
     const buf     = this._ctx.createBuffer(1, float32.length, SAMPLE_RATE)
     buf.getChannelData(0).set(float32)
@@ -56,6 +65,7 @@ export class VoiceEngine {
 
   setAnonymized(v) { this._anonymized = v }
   setMuted(v)      { this._muted = v }
+  setDeafened(v)   { this._deafened = v }
 
   stop() {
     this._processor?.disconnect()
@@ -63,6 +73,7 @@ export class VoiceEngine {
     this._ctx?.close()
     this._ctx          = null
     this._nextPlayTime = 0
+    this._smoothLevel  = 0
   }
 }
 

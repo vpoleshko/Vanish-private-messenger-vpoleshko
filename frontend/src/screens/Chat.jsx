@@ -27,13 +27,43 @@ const IcoShield = () => (
   </svg>
 )
 
-const IcoMicShield = () => (
+const IcoMask = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="2" width="6" height="10" rx="3"/>
-    <path d="M5 10a7 7 0 0 0 9.33 6.62"/>
-    <line x1="12" y1="19" x2="12" y2="22"/>
-    <line x1="8" y1="22" x2="16" y2="22"/>
-    <path d="M19 14l-3 1.2v2.3c0 1.4.9 2.7 3 3 2.1-.3 3-1.6 3-3v-2.3L19 14z" fill="currentColor" fillOpacity=".15" strokeWidth="1.5"/>
+    <path d="M2 9c0-2.2 1.8-4 4-4h12c2.2 0 4 1.8 4 4 0 3.5-2 6.5-5 7.8-.4.2-.8 1.2-5 1.2s-4.6-1-5-1.2C4 15.5 2 12.5 2 9z"/>
+    <ellipse cx="8.5" cy="9" rx="2" ry="1.5"/>
+    <ellipse cx="15.5" cy="9" rx="2" ry="1.5"/>
+  </svg>
+)
+
+const IcoMaskOff = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 9c0-2.2 1.8-4 4-4h12c2.2 0 4 1.8 4 4 0 3.5-2 6.5-5 7.8-.4.2-.8 1.2-5 1.2s-4.6-1-5-1.2C4 15.5 2 12.5 2 9z"/>
+    <ellipse cx="8.5" cy="9" rx="2" ry="1.5"/>
+    <ellipse cx="15.5" cy="9" rx="2" ry="1.5"/>
+    <line x1="2" y1="2" x2="22" y2="22"/>
+  </svg>
+)
+
+const IcoHeadphones = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
+    <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+  </svg>
+)
+
+const IcoHeadphonesOff = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v-3a9 9 0 0 0-14.3-7.3M3.1 10A9 9 0 0 0 3 12v6"/>
+    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
+    <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+    <line x1="2" y1="2" x2="22" y2="22"/>
+  </svg>
+)
+
+const IcoWarn = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{width:11,height:11,flexShrink:0}}>
+    <path d="M12 2L1 21h22L12 2zm0 3.5L20.5 19h-17L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
   </svg>
 )
 
@@ -162,16 +192,25 @@ function AnonWarning({ onConfirm, onCancel }) {
 
 function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
   const [muted,        setMuted]        = useState(false)
+  const [deafened,     setDeafened]     = useState(false)
   const [error,        setError]        = useState(null)
   const [active,       setActive]       = useState(false)
   const [peerWasHere,  setPeerWasHere]  = useState(false)
   const [anonymized,   setAnonymized]   = useState(true)
   const [showWarning,  setShowWarning]  = useState(false)
+  const [level,        setLevel]        = useState(0)
+  const levelRef  = useRef(0)
   const engineRef = useRef(null)
 
   useEffect(() => {
     if (state.peerPeerId) setPeerWasHere(true)
   }, [state.peerPeerId])
+
+  // Poll level at 20 fps to avoid flooding React with raw audio callbacks
+  useEffect(() => {
+    const id = setInterval(() => setLevel(levelRef.current), 50)
+    return () => clearInterval(id)
+  }, [])
 
   const handleAnonToggle = () => {
     if (anonymized) {
@@ -191,7 +230,10 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
   useEffect(() => {
     let engine
     import('../audio.js').then(({ VoiceEngine }) => {
-      engine = new VoiceEngine({ onChunk: sendVoice })
+      engine = new VoiceEngine({
+        onChunk: sendVoice,
+        onLevel: (v) => { levelRef.current = v },
+      })
       engineRef.current = engine
       voiceRef.current  = (audio) => engine.receive(audio)
       engine.start().then(() => setActive(true)).catch((err) => {
@@ -219,12 +261,28 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
     engineRef.current?.setMuted(next)
   }
 
+  const toggleDeafen = () => {
+    const next = !deafened
+    setDeafened(next)
+    engineRef.current?.setDeafened(next)
+  }
+
+  // Avatar glow/scale reacts to voice level
+  const speaking = active && !muted && level > 0.04
+  const avatarStyle = {
+    transform:  speaking ? `scale(${(1 + level * 0.22).toFixed(3)})` : 'scale(1)',
+    boxShadow:  speaking
+      ? `0 0 ${Math.round(level * 28 + 6)}px rgba(167,139,250,${(0.25 + level * 0.55).toFixed(2)})`
+      : undefined,
+    transition: 'transform 0.09s ease-out, box-shadow 0.09s ease-out',
+  }
+
   return (
     <div className="chat-wrap">
       <ChatHeader state={state} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
 
       <div className="voice-body">
-        <div className={`voice-avatar${state.peerPeerId && active ? ' active' : ''}`}>
+        <div className={`voice-avatar${state.peerPeerId && active ? ' active' : ''}`} style={avatarStyle}>
           <span style={{width:32,height:32,color:muted?'var(--danger)':'var(--accent)'}}>
             {muted ? <IcoMicOff /> : <IcoMic />}
           </span>
@@ -248,29 +306,58 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
         </div>
 
         <div className="voice-controls">
+          {/* Mute microphone */}
           <button
             className={`btn-mic${muted ? ' muted' : ''}`}
             onClick={toggleMute}
-            title={muted ? 'Unmute' : 'Mute'}
+            title={muted ? 'Unmute microphone' : 'Mute microphone'}
           >
             <span style={{width:22,height:22}}>
               {muted ? <IcoMicOff /> : <IcoMic />}
             </span>
           </button>
 
+          {/* Deafen — mute incoming audio */}
           <button
-            className={`btn-mic${!anonymized ? ' muted' : ''}`}
-            onClick={handleAnonToggle}
-            title={anonymized ? 'Voice anonymized — click to disable' : 'Real voice — click to anonymize'}
+            className={`btn-mic${deafened ? ' muted' : ''}`}
+            onClick={toggleDeafen}
+            title={deafened ? 'Undeafen' : 'Deafen (mute speaker)'}
           >
-            <span style={{width:22,height:22}}><IcoMicShield /></span>
+            <span style={{width:22,height:22}}>
+              {deafened ? <IcoHeadphonesOff /> : <IcoHeadphones />}
+            </span>
           </button>
+
+          {/* Voice anonymizer */}
+          <div style={{position:'relative',display:'inline-flex'}}>
+            <button
+              className={`btn-mic${!anonymized ? ' muted' : ''}`}
+              onClick={handleAnonToggle}
+              title={anonymized ? 'Voice anonymized — click to disable' : 'Real voice — click to anonymize'}
+            >
+              <span style={{width:22,height:22}}>
+                {anonymized ? <IcoMask /> : <IcoMaskOff />}
+              </span>
+            </button>
+            {!anonymized && (
+              <span style={{
+                position:'absolute', top:-5, right:-5,
+                width:16, height:16, borderRadius:'50%',
+                background:'var(--danger)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:10, fontWeight:800, color:'#fff',
+                pointerEvents:'none', lineHeight:1,
+              }}>!</span>
+            )}
+          </div>
         </div>
 
-        <div className="voice-anon-status">
+        <div className="voice-anon-status" style={!anonymized ? {color:'var(--danger)',fontWeight:600} : {}}>
           {anonymized
             ? 'Voice anonymized'
-            : 'Real voice — identity at risk'}
+            : <span style={{display:'flex',alignItems:'center',gap:5,justifyContent:'center'}}>
+                <IcoWarn /> Real voice — identity at risk
+              </span>}
         </div>
       </div>
 

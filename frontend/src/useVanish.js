@@ -114,7 +114,7 @@ export function useVanish() {
         break
 
       case 'error':
-        if (s.screen !== 'chat') set({ screen: 'error', errorMsg: msg.message || msg.code })
+        if (s.screen !== 'chat') set({ screen: 'error', errorMsg: msg.code === 'ROOM_NOT_FOUND' ? 'This link is invalid or has expired.' : (msg.message || msg.code) })
         else dispatch({ type: 'APPEND_MSG', msg: { system: true, text: `Error: ${msg.message}`, time: new Date() } })
         break
 

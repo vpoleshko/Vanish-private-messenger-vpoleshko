@@ -27,9 +27,6 @@ _ERRORS = {
     "INVALID_JSON":    "Invalid JSON",
     "PROTOCOL_ERROR":  "Protocol error",
     "ROOM_NOT_FOUND":  "Room not found",
-    "ROOM_EXPIRED":    "Room has expired",
-    "ROOM_FULL":       "Room is full",
-    "INVALID_INVITE":  "Invalid or expired invite",
 }
 
 
@@ -89,19 +86,19 @@ async def ws_endpoint(ws: WebSocket):
                 return
 
             if room.status != RoomStatus.ACTIVE:
-                await _error(ws, "ROOM_EXPIRED")
+                await _error(ws, "ROOM_NOT_FOUND")
                 return
 
             if _exp_ts(room.expires_at) <= datetime.now(timezone.utc):
-                await _error(ws, "ROOM_EXPIRED")
+                await _error(ws, "ROOM_NOT_FOUND")
                 return
 
             if registry.peer_count(room.id) >= room.max_participants:
-                await _error(ws, "ROOM_FULL")
+                await _error(ws, "ROOM_NOT_FOUND")
                 return
 
             if not await invite_repo.validate_and_consume(room.id, msg.invite_token):
-                await _error(ws, "INVALID_INVITE")
+                await _error(ws, "ROOM_NOT_FOUND")
                 return
 
             await session.commit()

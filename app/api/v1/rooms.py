@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Request, status
 
 from app.api.deps import RoomServiceDep
-from app.schemas.room import RoomCreateRequest, RoomCreateResponse, RoomStatusResponse
+from app.schemas.room import RoomCreateRequest, RoomCreateResponse
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
@@ -14,17 +14,4 @@ async def create_room(body: RoomCreateRequest, request: Request, service: RoomSe
         my_url=f"{base}/r/{result.room_code}#invite={result.my_invite_token}",
         invite_url=f"{base}/r/{result.room_code}#invite={result.peer_invite_token}",
         expires_at=result.entity.expires_at,
-    )
-
-
-@router.get("/{room_code}/status", response_model=RoomStatusResponse)
-async def room_status(room_code: str, service: RoomServiceDep):
-    entity = await service.get_by_code(room_code)
-    if not entity:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
-    return RoomStatusResponse(
-        status=entity.status,
-        privacy_mode=entity.privacy_mode,
-        expires_at=entity.expires_at,
-        max_participants=entity.max_participants,
     )
