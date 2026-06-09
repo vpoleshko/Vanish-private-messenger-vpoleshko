@@ -24,10 +24,6 @@ export default function Waiting({ state }) {
       </div>
 
       <div className="invite-card">
-        <div style={{ color: 'var(--muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 10, fontFamily: 'Menlo,Consolas,monospace' }}>
-          Invite link
-        </div>
-        <div className="invite-url">{url}</div>
         <button className={`btn-copy${copied ? ' copied' : ''}`} onClick={copy}>
           {copied ? 'Copied!' : 'Copy link'}
         </button>

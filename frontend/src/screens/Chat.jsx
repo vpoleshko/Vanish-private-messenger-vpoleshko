@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-/* ── SVG icons ───────────────────────────────────────────────────────────── */
 const IcoMic = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -90,7 +89,6 @@ const IcoText = () => (
   </svg>
 )
 
-/* ── Safety code modal ───────────────────────────────────────────────────── */
 function SafetyModal({ code, onClose }) {
   const words = code.split(' · ')
   return (
@@ -115,7 +113,6 @@ export default function Chat({ state, sendMsg, sendVoice, voiceRef, destroyRoom,
     : <TextChat  state={state} sendMsg={sendMsg} destroyRoom={destroyRoom} leaveRoom={leaveRoom} />
 }
 
-/* ── Text chat ──────────────────────────────────────────────────────────── */
 function TextChat({ state, sendMsg, destroyRoom, leaveRoom }) {
   const msgsRef  = useRef(null)
   const inputRef = useRef(null)
@@ -180,7 +177,6 @@ function TextChat({ state, sendMsg, destroyRoom, leaveRoom }) {
   )
 }
 
-/* ── Voice chat ─────────────────────────────────────────────────────────── */
 function AnonWarning({ onConfirm, onCancel }) {
   return (
     <div className="safety-overlay" onClick={onCancel}>
@@ -215,7 +211,6 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
     if (state.peerPeerId) setPeerWasHere(true)
   }, [state.peerPeerId])
 
-  // Poll level at 20 fps to avoid flooding React with raw audio callbacks
   useEffect(() => {
     const id = setInterval(() => setLevel(levelRef.current), 50)
     return () => clearInterval(id)
@@ -262,7 +257,7 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
       engine?.stop()
       voiceRef.current = null
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const toggleMute = () => {
     const next = !muted
@@ -276,7 +271,6 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
     engineRef.current?.setDeafened(next)
   }
 
-  // Avatar glow/scale reacts to voice level
   const speaking = active && !muted && level > 0.04
   const avatarStyle = {
     transform:  speaking ? `scale(${(1 + level * 0.22).toFixed(3)})` : 'scale(1)',
@@ -380,7 +374,6 @@ function VoiceChat({ state, sendVoice, voiceRef, destroyRoom, leaveRoom }) {
   )
 }
 
-/* ── Shared header ──────────────────────────────────────────────────────── */
 function ChatHeader({ state, destroyRoom, leaveRoom }) {
   const [label,      setLabel]      = useState('')
   const [showSafety, setShowSafety] = useState(false)

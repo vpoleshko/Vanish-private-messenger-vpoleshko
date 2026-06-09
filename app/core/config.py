@@ -6,7 +6,6 @@ class Settings(BaseSettings):
 
     # App
     app_env: str = "development"
-    secret_key: str
 
     # MySQL
     mysql_host: str = "db"

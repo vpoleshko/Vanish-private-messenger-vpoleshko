@@ -38,7 +38,6 @@ export function useVanish() {
   const ratchetRef = useRef(null)   // E2EERatchet, created when peer joins
   stateRef.current = state
 
-  // Init libsodium + generate keypair on mount
   useEffect(() => {
     E2EERatchet.init().then(() => {
       keyPairRef.current = E2EERatchet.generateX25519KeyPair()
@@ -46,18 +45,16 @@ export function useVanish() {
     return () => { ratchetRef.current?.destroy() }
   }, [])
 
-  // Client-side expiry safety net
   useEffect(() => {
     if (!state.expiresAt) return
     const ms = state.expiresAt - Date.now()
     if (ms <= 0) { closeTab(PANIC_URL); return }
     const id = setTimeout(() => closeTab(PANIC_URL), ms)
     return () => clearTimeout(id)
-  }, [state.expiresAt]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.expiresAt])
 
   const set = useCallback(payload => dispatch({ type: 'SET', payload }), [])
 
-  // Creates ratchet from peer's public key — destroys room for both if key exchange fails
   const initRatchet = useCallback(async (myPeerId, theirPeerId, theirPublicKeyB64) => {
     try {
       if (!keyPairRef.current) throw new Error('keypair not ready')
@@ -71,7 +68,6 @@ export function useVanish() {
       ratchetRef.current = ratchet
       set({ safetyCode: ratchet.safetyCode })
     } catch {
-      // key exchange failed — no unencrypted fallback, destroy room for both
       const ws = wsRef.current
       if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'destroy_room' }))
       ratchetRef.current?.destroy()
@@ -92,7 +88,6 @@ export function useVanish() {
           set({ screen: 'chat', peerId: msg.peer_id, peerPeerId: msg.peer?.peer_id,
                 roomType: msg.room_type, expiresAt: new Date(msg.room_expires_at) })
           dispatch({ type: 'APPEND_MSG', msg: { system: true, text: 'Peer connected.', time: new Date() } })
-          // Invitee: peer key is already in ack
           if (msg.peer?.public_key) initRatchet(msg.peer_id, msg.peer.peer_id, msg.peer.public_key)
         }
         break
@@ -100,7 +95,6 @@ export function useVanish() {
       case 'peer_joined':
         set({ screen: 'chat', peerPeerId: msg.peer_id })
         dispatch({ type: 'APPEND_MSG', msg: { system: true, text: 'Peer connected.', time: new Date() } })
-        // Creator: peer key arrives here
         if (msg.public_key) initRatchet(stateRef.current.peerId, msg.peer_id, msg.public_key)
         break
 

@@ -22,7 +22,6 @@ app = FastAPI(title="Vanish")
 app.include_router(api_router)
 app.include_router(ws_router)
 
-# Vite outputs assets/ dir with hashed bundles
 if (_STATIC / "assets").exists():
     app.mount("/assets", StaticFiles(directory=_STATIC / "assets"), name="assets")
 
